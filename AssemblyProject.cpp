@@ -156,7 +156,7 @@ void SLTI(inst x) //17
         r[x.rs0]=1;
     else r[x.rs0]=0;
 }
-void SLTUI(inst x) //18
+void SLTIU(inst x) //18
 {
     if ((unsigned int32_t)r[x.rs1]< x.immediate)
         r[x.rs0]=1;
@@ -173,7 +173,7 @@ void SRAI(inst x) //20
 }
 void LB(inst x) //21
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
     {
         int temp = memory[add];
@@ -189,7 +189,7 @@ void LB(inst x) //21
 }
 void LBU(inst x) //22
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
     {
         int temp = memory[add];
@@ -205,7 +205,7 @@ void LBU(inst x) //22
 }
 void LH(inst x) //23
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
     {
         int temp = memory[add];
@@ -226,7 +226,7 @@ void LH(inst x) //23
 }
 void LHU(inst x) //24
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
     {
         int temp = memory[add];
@@ -247,7 +247,7 @@ void LHU(inst x) //24
 }
 void LW(inst x) //25
 {
-    int add = x.immediate + r[x.rs1];
+    int add = x.immediate/4 + r[x.rs1];
     if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
     {
         int temp = memory[add+3];
@@ -271,7 +271,7 @@ void LW(inst x) //25
 
 void SB(inst x) //26
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     int temp = r[x.rs1];
     temp = temp<<24;
     temp = temp>>24;
@@ -281,7 +281,7 @@ void SB(inst x) //26
 }
 void SH(inst x) //27
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     int temp = r[x.rs1];
     temp = temp<<24;
     temp = temp>>24;
@@ -293,7 +293,7 @@ void SH(inst x) //27
 }
 void SW(inst x) //28
 {
-    int add = x.immediate + r[x.rs2];
+    int add = x.immediate/4 + r[x.rs2];
     int temp = r[x.rs1];
     temp = temp<<24;
     temp = temp>>24;
@@ -308,6 +308,77 @@ void SW(inst x) //28
     temp = r[x.rs1]<<24;
     memory[add+3] = temp;
     return;        
+}
+void BEQ(inst x) //29
+{
+    if (r[x.rs1]==r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;        
+
+}
+void BNE(inst x) //30
+{
+    if (r[x.rs1] != r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;
+           
+}
+void BLT(inst x) //31
+{
+    if (r[x.rs1] < r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;;
+
+}
+void BGE(inst x) //32
+{
+    if (r[x.rs1] >= r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;;
+}
+void BLTU(inst x) //33
+{
+    if ((unsigned int)r[x.rs1] < (unsigned int)r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;;
+    
+}
+void BGEU(inst x) //34
+{
+    if ((unsigned int)r[x.rs1] >= (unsigned int)r[x.rs2])
+        PC += Labels[x.label].second - Labels[x.label].first - 1;;
+}
+
+void LUI(inst x) //35
+{
+    r[x.rs0]=0;
+    r[x.rs0]=x.immediate<<12;
+    PC += Labels[x.label].second - Labels[x.label].first - 1;;
+}
+void AUIPC(inst x) //36
+{
+    r[x.rs0] = PC + x.immediate << 12;
+    PC += Labels[x.label].second - Labels[x.label].first - 1;; 
+}
+
+void JAL(inst x) //37
+{
+    PC += Labels[x.label].second - Labels[x.label].first - 1;;
+    r[x.rs0] = PC+1;
+
+}
+void JALR(inst x) //38
+{
+    r[x.rs0] = PC + 1;
+    PC = r[x.rs1]+(x.immediate/4);
+}
+
+void ECALL(inst x) //39
+{
+    exit(0);
+}
+void FENCE(inst x) //40
+{
+    exit(0);
+}
+void EBREAK(inst x) //41
+{
+    exit(0);
 }
 
 // End Function
@@ -438,12 +509,12 @@ void ReadSource() {
         lineNum++;
     }
 
-    // DEBUG
+    /*// DEBUG
     cout << "READ:" << endl;
     for (int i =0; i < program.size() ; i++) {
         cout << program[i].type << " rs0= " << program[i].rs0 << " rs1= " << program[i].rs1 << " rs2= " << program[i].rs2 << " imm= " << program[i].immediate  << " label= " << program[i].label << endl;
     }
-    // END DEBUG
+    // END DEBUG*/
     codeF.close();
     
     cout << "Please input program data file name(type x if none)" << endl;
@@ -637,7 +708,7 @@ int main() {
         cin >> r;
         int cycle = 0;
         if (r == '2') {
-            while (PC < program.size()) {
+            while (PC < program.size() && ExceptionFlag == false) {
                 cout << "cycle " << cycle;
                 callFunc(program[PC]);
                 Showdata();
@@ -645,7 +716,7 @@ int main() {
             }
         }
         else if (r == '1') {
-            while (PC < program.size()) {
+            while (PC < program.size() && ExceptionFlag == false) {
                 cout << "Enter any key to continue" << endl;
                 cin >> r;
                 cout << "Cycle " << cycle;
