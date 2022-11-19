@@ -612,21 +612,48 @@ void callFunc(inst x) {
     PC++;
 }
 
+void Showdata() {
+    //system("cls");
+    cout << "Registers" << '\t' << "Dec" << '\t' << "Hex"  << '\t' << "Bin" << endl;
+    for (int i = 0 ; i < 32; i++) { // print the registers
+        
+    }
+    cout << "Mem Address" << '\t' << "Dec" << '\t' << "Hex"  << '\t' << "Bin" << endl;
+    for(std::map<int,int>::iterator iter = memory.begin(); iter != memory.end(); ++iter)
+    {
+        //Key k = iter->first;   memory address
+        //Value v = iter->second;
+    }
+}
+
 int main() {
+    cout <<"Welcome to the Assembly simulator!";
     initialize();  //  get program ready
     ReadSource();
-    cout <<"done";
-
-    while (PC < program.size()) {
-        callFunc(program[PC]);
-    }
-
-    /*for (int i = 0; i < 40; i++) {
-        cout << "if(name == \"" + instructions[i] + "\") {" << endl;
-        string t;
-        for (int x = 0; x < instructions[i].length() ;x++) {
-            t += toupper(instructions[i][x]);
+    
+    char r;
+    do {
+        cout << "Please select the mode you'd like to use" << endl << "1: one by one instruction" <<  endl << "2: run full program" << endl;
+        cin >> r;
+        int cycle = 0;
+        if (r == '2') {
+            while (PC < program.size()) {
+                cout << "cycle " << cycle;
+                callFunc(program[PC]);
+                Showdata();
+                cycle++;
+            }
         }
-        cout << t << "(x);" << endl << "}" << endl;
-    }*/
+        else if (r == '1') {
+            while (PC < program.size()) {
+                cout << "Enter any key to continue" << endl;
+                cin >> r;
+                cout << "Cycle " << cycle;
+                callFunc(program[PC]);
+                Showdata();
+                cycle++;
+            }
+        }
+    }while(r != '1' && r != '2');
+    cout << "--------------------------END OF PROGRAM--------------------------" << endl;
 }
