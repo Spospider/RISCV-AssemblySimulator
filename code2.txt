@@ -1,0 +1,10 @@
+addi a0, x0, 5
+addi a1, x0, 4
+multiply:
+  ADD  t0, zero, zero
+  ADDI a1, a1, -1
+accumulate:
+  ADD  t0, t0, a0
+  ADDI a1, a1, -1
+  BGE  a1, zero, accumulate
+  ADD  a0, zero, t0

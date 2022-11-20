@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <bits/stdc++.h>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -42,7 +43,7 @@ void ADD( inst x) //1
 {
     if (x.rs0 == 0)
         return ;
-    r[x.rs0] = r [x.rs1]+r[x.rs2];
+    r[x.rs0] = r[x.rs1]+r[x.rs2];
 }
     
 
@@ -174,7 +175,7 @@ void SRAI(inst x) //20
 void LB(inst x) //21
 {
     int add = x.immediate/4 + r[x.rs2];
-    if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
+    if (memory.find(add) != memory.end() )
     {
         int temp = memory[add];
         temp = temp<<24;
@@ -190,7 +191,7 @@ void LB(inst x) //21
 void LBU(inst x) //22
 {
     int add = x.immediate/4 + r[x.rs2];
-    if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
+    if ( memory.find(add) != memory.end() )
     {
         int temp = memory[add];
         temp = (unsigned int)temp<<24;
@@ -206,7 +207,7 @@ void LBU(inst x) //22
 void LH(inst x) //23
 {
     int add = x.immediate/4 + r[x.rs2];
-    if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
+    if ( memory.find(add) != memory.end() )
     {
         int temp = memory[add];
         int t1 = memory[add+1];
@@ -227,7 +228,7 @@ void LH(inst x) //23
 void LHU(inst x) //24
 {
     int add = x.immediate/4 + r[x.rs2];
-    if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
+    if ( memory.find(add) != memory.end() )
     {
         int temp = memory[add];
         int t1 = memory[add+1];
@@ -248,7 +249,7 @@ void LHU(inst x) //24
 void LW(inst x) //25
 {
     int add = x.immediate/4 + r[x.rs1];
-    if ( std::find(memory.begin(), memory.end(), add) != memory.end() )
+    if ( memory.find(add) != memory.end() )
     {
         int temp = memory[add+3];
         temp =  temp <<= 8;
@@ -311,36 +312,36 @@ void SW(inst x) //28
 }
 void BEQ(inst x) //29
 {
-    if (r[x.rs1]==r[x.rs2])
+    if (r[x.rs0]==r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;        
 
 }
 void BNE(inst x) //30
 {
-    if (r[x.rs1] != r[x.rs2])
+    if (r[x.rs0] != r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;
            
 }
 void BLT(inst x) //31
 {
-    if (r[x.rs1] < r[x.rs2])
+    if (r[x.rs0] < r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;;
 
 }
 void BGE(inst x) //32
 {
-    if (r[x.rs1] >= r[x.rs2])
+    if (r[x.rs0] >= r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;;
 }
 void BLTU(inst x) //33
 {
-    if ((unsigned int)r[x.rs1] < (unsigned int)r[x.rs2])
+    if ((unsigned int)r[x.rs0] < (unsigned int)r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;;
     
 }
 void BGEU(inst x) //34
 {
-    if ((unsigned int)r[x.rs1] >= (unsigned int)r[x.rs2])
+    if ((unsigned int)r[x.rs0] >= (unsigned int)r[x.rs1])
         PC += Labels[x.label].second - Labels[x.label].first - 1;;
 }
 
@@ -437,16 +438,44 @@ void ReadSource() {
         inst command;
         //Separate string based on commas and white spaces
         getline(ss,token,' ');
+        if (token.length() == line.length()) {
+            if (Labels.find(token) == Labels.end()) {  // label not yet defined
+                pair<int, int> t;
+                t.first = -1;
+                t.second = lineNum;
+                Labels[token] = t;
+            }
+            else {
+                Labels[token].second = lineNum;
+            }
+            //cout << "here" << token << " ";
+            getline(codeF, line);
+            
+            ss.clear();
+            ss.str(line);
+            
+            getline(ss,token,' ');
+            cout << "here" << token << " ";
+        }
         transform(token.begin(), token.end(), token.begin(), ::tolower);
-        if (token.find("//") ==  0) { // commended line
+        while (token.length() == 0) {
+            getline(ss,token,' ');
+        }
+        if (token.find("//") < token.length()) { // commented line
             continue;
         }
         if (token.find(':') == token.length() - 1) {
             //label found
-            pair<int, int> t;
-            t.first = -1;
-            t.second = lineNum;
-            Labels[token] = t;
+            if (Labels.find(token) == Labels.end()) {  // label not yet defined
+                pair<int, int> t;
+                t.first = -1;
+                t.second = lineNum;
+                Labels[token] = t;
+            }
+            else {
+                Labels[token].second = lineNum;
+            }
+            
             getline(ss, token, ' ');
             transform(token.begin(), token.end(), token.begin(), ::tolower);
             command.type = token;
@@ -514,6 +543,7 @@ void ReadSource() {
     for (int i =0; i < program.size() ; i++) {
         cout << program[i].type << " rs0= " << program[i].rs0 << " rs1= " << program[i].rs1 << " rs2= " << program[i].rs2 << " imm= " << program[i].immediate  << " label= " << program[i].label << endl;
     }
+    cout << "lines: "  << lineNum << endl;
     // END DEBUG*/
     codeF.close();
     
@@ -685,45 +715,63 @@ void callFunc(inst x) {
 
 void Showdata() {
     //system("cls");
+    cout << "------------------------" << endl;
     cout << "Registers" << '\t' << "Dec" << '\t' << "Hex"  << '\t' << "Bin" << endl;
     for (int i = 0 ; i < 32; i++) { // print the registers
-        
+        char hexString[7];
+        char bin[7];
+        itoa(r[i], hexString, 16);
+        itoa(r[i], bin, 2);
+        cout << 'x' << i << '\t' << '\t' << r[i] << '\t' << hexString << '\t' << bin << endl;
     }
     cout << "Mem Address" << '\t' << "Dec" << '\t' << "Hex"  << '\t' << "Bin" << endl;
     for(std::map<int,int>::iterator iter = memory.begin(); iter != memory.end(); ++iter)
     {
+        char hexString[7];
+        char bin[7];
+        itoa(iter->second, hexString, 16);
+        itoa(iter->second, bin, 2);
+        cout << "mem[" << iter->first << ']' << '\t' << '\t' << iter->second << '\t' << hexString << '\t' << bin << endl;
         //Key k = iter->first;   memory address
         //Value v = iter->second;
     }
 }
 
 int main() {
-    cout <<"Welcome to the Assembly simulator!";
+    cout <<"Welcome to the Assembly simulator!" << endl;
     initialize();  //  get program ready
     ReadSource();
+
+    cout << "Please enter the program's starting address" << endl;
+    int addressStart;
+    cin >> addressStart;
     
     char r;
+    bool repeat = false;
     do {
         cout << "Please select the mode you'd like to use" << endl << "1: one by one instruction" <<  endl << "2: run full program" << endl;
         cin >> r;
         int cycle = 0;
         if (r == '2') {
+            repeat = false;
             while (PC < program.size() && ExceptionFlag == false) {
-                cout << "cycle " << cycle;
+                cout << "cycle " << cycle << '\t' << "PC = " << PC + addressStart;
                 callFunc(program[PC]);
                 Showdata();
                 cycle++;
             }
+            r = '1';
         }
         else if (r == '1') {
             while (PC < program.size() && ExceptionFlag == false) {
                 cout << "Enter any key to continue" << endl;
                 cin >> r;
-                cout << "Cycle " << cycle;
+                cout << "cycle " << cycle << '\t' << "PC = " << PC + addressStart;
                 callFunc(program[PC]);
                 Showdata();
                 cycle++;
             }
+            r = '1';
         }
     }while(r != '1' && r != '2');
     cout << "--------------------------END OF PROGRAM--------------------------" << endl;
